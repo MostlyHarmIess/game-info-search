@@ -1,5 +1,4 @@
-/* eslint-disable react/prop-types */
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -13,7 +12,7 @@ function PokemonOfType({ typeData }) {
       ...typeData[0].pokemon.map((ele) => ele.pokemon.name),
     ]);
     const pokemonOfSecondType = new Set(
-      typeData[1]
+      typeData[1].name
         ? [...typeData[1].pokemon.map((ele) => ele.pokemon.name)]
         : [],
     );

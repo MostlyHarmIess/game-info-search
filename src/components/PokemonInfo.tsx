@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
@@ -8,18 +8,38 @@ import CircularProgress from "@mui/material/CircularProgress";
 import DamageTaken from "./DamageTaken";
 import { POKEMON_ENDPOINT } from "../config";
 import PokemonOfType from "./PokemonOfType";
+import { useQuery } from "@tanstack/react-query";
 
 function PokemonInfo() {
   const { userChoice } = useParams();
-  const navigate = useNavigate();
-  const [pokemonData, setPokemonData] = useState(
-    JSON.parse(localStorage.getItem("pokemonData")) || [],
-  );
-  const [typeData, setTypeData] = useState(
-    JSON.parse(localStorage.getItem("typeData")) || [],
-  );
 
-  async function getTypeInfo(type) {
+  const navigate = useNavigate();
+
+  const [pokemonData, setPokemonData] = useState<any>({});
+  const [typeData, setTypeData] = useState<any[]>([]);
+
+  const specificPokemonQuery = useQuery({
+    queryKey: ["specificPokemonQuery", userChoice],
+    queryFn: () => getPokemonInfo(),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const specificTypesQueryType1 = useQuery({
+    queryKey: ["specificTypesQueryType1", userChoice],
+    queryFn: () => getTypeInfo(specificPokemonQuery.data.types[0].type.name),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!specificPokemonQuery.isSuccess,
+  });
+
+  const specificTypesQueryType2 = useQuery({
+    queryKey: ["specificTypesQueryType2", userChoice],
+    queryFn: () => getTypeInfo(specificPokemonQuery.data.types[1].type.name),
+    staleTime: 1000 * 60 * 5,
+    enabled:
+      !!specificPokemonQuery.isSuccess && !!specificPokemonQuery.data.types[1],
+  });
+
+  async function getTypeInfo(type: string) {
     try {
       const response = await fetch(
         `${POKEMON_ENDPOINT}type/${type}?limit=100000`,
@@ -29,16 +49,9 @@ function PokemonInfo() {
       }
       const data = await response.json();
 
-      delete data.game_indices;
-      delete data.generation;
-      delete data.move_damage_class;
-      delete data.moves;
-      delete data.names;
-      delete data.past_damage_relations;
-
       return data;
     } catch (e) {
-      throw new Error(e);
+      throw new Error(e as string);
     }
   }
 
@@ -52,61 +65,24 @@ function PokemonInfo() {
       }
       const data = await response.json();
 
-      setPokemonData(data);
+      return data;
     } catch (e) {
-      throw new Error(e);
-    }
-  }
-
-  async function assembleTypeData() {
-    if (pokemonData.types && pokemonData.types.length === 1) {
-      setTypeData([await getTypeInfo(pokemonData.types[0].type.name)]);
-    } else {
-      setTypeData([
-        await getTypeInfo(pokemonData.types[0].type.name),
-        await getTypeInfo(pokemonData.types[1].type.name),
-      ]);
+      throw new Error(e as string);
     }
   }
 
   useEffect(() => {
-    if (
-      !typeData[0] ||
-      !pokemonData.name ||
-      pokemonData.name !== userChoice ||
-      pokemonData.types[0].type.name !== typeData[0].name
-    ) {
-      getPokemonInfo();
-    }
-  }, []);
+    setPokemonData(specificPokemonQuery.data);
+  }, [specificPokemonQuery.data]);
 
   useEffect(() => {
-    // console.log(pokemonData);
-    if (pokemonData.name) {
-      localStorage.setItem("pokemonData", JSON.stringify(pokemonData));
-    }
-    if (
-      !typeData[0] ||
-      !pokemonData.name ||
-      pokemonData.name !== userChoice ||
-      pokemonData.types[0].type.name !== typeData[0].name
-    ) {
-      assembleTypeData();
-    }
-  }, [pokemonData]);
+    setTypeData([
+      specificTypesQueryType1.data,
+      specificTypesQueryType2.data ?? [],
+    ]);
+  }, [specificTypesQueryType1.data, specificTypesQueryType2.data]);
 
-  useEffect(() => {
-    if (typeData?.[0]?.name) {
-      localStorage.setItem("typeData", JSON.stringify(typeData));
-    }
-  }, [typeData]);
-
-  if (
-    !typeData[0] ||
-    !pokemonData.name ||
-    pokemonData.name !== userChoice ||
-    pokemonData.types[0].type.name !== typeData[0].name
-  ) {
+  if (!pokemonData?.name || !typeData[0]?.name) {
     return (
       <Grid container spacing={1}>
         <Grid
@@ -134,15 +110,11 @@ function PokemonInfo() {
       >
         <img
           src={pokemonData.sprites.front_default}
-          alt={typeData[0]?.name}
+          alt={typeData[0].name}
           style={{ minHeight: "127px" }}
         />
         <Typography variant="h1" component="h1">
-          {userChoice}
-          ,&nbsp;
-          {typeData[0]?.name}
-          &nbsp;
-          {typeData[1] ? typeData[1].name : ""}
+          {userChoice}, {typeData[0].name},{typeData[1] ? typeData[1].name : ""}
         </Typography>
         <IconButton
           style={{ height: "40px", width: "40px", marginLeft: "auto" }}

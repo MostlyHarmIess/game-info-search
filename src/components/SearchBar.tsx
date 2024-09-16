@@ -1,55 +1,56 @@
-/* eslint-disable react/jsx-props-no-spreading */
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
 import { useNavigate } from "react-router";
 import { POKEMON_ENDPOINT } from "../config";
+import { useQuery } from "@tanstack/react-query";
 
 function SearchBar() {
   const navigate = useNavigate();
-  const [pokemonList, setPokemonList] = useState(
-    () => JSON.parse(localStorage.getItem("pokemon")) || [],
-  );
 
-  const [typeList, setTypeList] = useState(
-    () => JSON.parse(localStorage.getItem("types")) || [],
-  );
+  const [pokemonList, setPokemonList] = useState<any[]>([]);
+  const [typeList, setTypeList] = useState<any[]>([]);
 
-  async function fetchPokemon(endpoint) {
+  const pokemonQuery = useQuery({
+    queryKey: ["pokemonQuery"],
+    queryFn: () => fetchPokemon("pokemon"),
+    staleTime: 1000 * 60 * 60,
+  });
+
+  const typeQuery = useQuery({
+    queryKey: ["typeQuery"],
+    queryFn: () => fetchPokemon("type"),
+    staleTime: 1000 * 60 * 60,
+  });
+
+  async function fetchPokemon(endpoint: string) {
     try {
       const response = await fetch(
         `${POKEMON_ENDPOINT}${endpoint}?limit=100000`,
       );
-      if (!response.status === "ok") {
+      if (!response.ok) {
         throw response;
       }
       const data = await response.json();
       const shapedData = data.results.flat();
 
-      switch (endpoint) {
-        case "pokemon":
-          localStorage.setItem("pokemon", JSON.stringify(shapedData));
-          setPokemonList(shapedData);
-          break;
-        case "type":
-          localStorage.setItem("types", JSON.stringify(shapedData));
-          setTypeList(shapedData);
-          break;
-        default:
-      }
+      return shapedData;
     } catch (e) {
-      throw new Error(e);
+      throw new Error(e as string);
     }
   }
 
   useEffect(() => {
-    if (!JSON.parse(localStorage.getItem("pokemon"))) {
-      fetchPokemon("pokemon");
+    if (pokemonQuery.isSuccess) {
+      setPokemonList(pokemonQuery.data);
     }
-    if (!JSON.parse(localStorage.getItem("types"))) {
-      fetchPokemon("type");
+  }, [pokemonQuery.data, pokemonQuery.isSuccess]);
+
+  useEffect(() => {
+    if (typeQuery.isSuccess) {
+      setTypeList(typeQuery.data);
     }
-  }, []);
+  }, [typeQuery.data, typeQuery.isSuccess]);
 
   return (
     <Autocomplete
@@ -61,7 +62,7 @@ function SearchBar() {
           event.key = "Enter";
         }
       }}
-      onChange={(event, value) => {
+      onChange={(_event, value) => {
         if (
           value.length === 1 &&
           pokemonList.some((ele) => ele.name === value[0].name)

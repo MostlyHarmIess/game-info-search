@@ -1,33 +1,41 @@
 /* eslint-disable react/prop-types */
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Grid from "@mui/material/Unstable_Grid2";
 
+interface DamageTakenInterface {
+  fourTimes: string[];
+  twoTimes: string[];
+  halfTimes: string[];
+  quarterTimes: string[];
+  immune: string[];
+}
 function DamageTaken({ typeData }) {
-  const [totalDamageTaken, setTotalDamageTaken] = useState({
-    fourTimes: [],
-    twoTimes: [],
-    halfTimes: [],
-    quarterTimes: [],
-    immune: [],
-  });
+  const [totalDamageTaken, setTotalDamageTaken] =
+    useState<DamageTakenInterface>({
+      fourTimes: [],
+      twoTimes: [],
+      halfTimes: [],
+      quarterTimes: [],
+      immune: [],
+    });
 
   function compareDamageTaken() {
     if (!typeData[0]?.name) return;
 
-    const doubleFrom1 = new Set([
+    const doubleFrom1 = new Set<string>([
       ...typeData[0].damage_relations.double_damage_from.map((ele) => ele.name),
     ]);
-    const halfFrom1 = new Set([
+    const halfFrom1 = new Set<string>([
       ...typeData[0].damage_relations.half_damage_from.map((ele) => ele.name),
     ]);
-    const noDamageFrom1 = new Set([
+    const noDamageFrom1 = new Set<string>([
       ...typeData[0].damage_relations.no_damage_from.map((ele) => ele.name),
     ]);
 
-    if (!typeData[1]) {
+    if (!typeData[1]?.name) {
       setTotalDamageTaken({
         fourTimes: [],
         twoTimes: [...doubleFrom1],
@@ -37,15 +45,15 @@ function DamageTaken({ typeData }) {
       });
       return;
     }
-    const doubleFrom2 = new Set([
+    const doubleFrom2 = new Set<string>([
       ...typeData[1].damage_relations.double_damage_from.map((ele) => ele.name),
     ]);
 
-    const halfFrom2 = new Set([
+    const halfFrom2 = new Set<string>([
       ...typeData[1].damage_relations.half_damage_from.map((ele) => ele.name),
     ]);
 
-    const noDamageFrom2 = new Set([
+    const noDamageFrom2 = new Set<string>([
       ...typeData[1].damage_relations.no_damage_from.map((ele) => ele.name),
     ]);
 

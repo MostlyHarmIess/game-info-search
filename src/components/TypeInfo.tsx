@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
@@ -8,68 +8,47 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { POKEMON_ENDPOINT } from "../config";
 import DamageTaken from "./DamageTaken";
 import PokemonOfType from "./PokemonOfType";
+import { useQuery } from "@tanstack/react-query";
 
 function TypeInfo() {
   const navigate = useNavigate();
   const { userChoice } = useParams();
   const shapedUserChoice = userChoice.split("-");
-  const [typeData, setTypeData] = useState(
-    JSON.parse(localStorage.getItem("typeData")) || [],
-  );
+  const [typeData, setTypeData] = useState<any[]>([]);
 
-  async function getTypeInfo(type) {
-    if (!type) return undefined;
+  const specificTypesQueryType1 = useQuery({
+    queryKey: ["specificTypesQueryType1", userChoice],
+    queryFn: () => getTypeInfo(shapedUserChoice[0]),
+    staleTime: 1000 * 60 * 5,
+  });
 
+  const specificTypesQueryType2 = useQuery({
+    queryKey: ["specificTypesQueryType2", userChoice],
+    queryFn: () => getTypeInfo(shapedUserChoice[1]),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  async function getTypeInfo(type: string) {
     try {
       const response = await fetch(
         `${POKEMON_ENDPOINT}type/${type}?limit=100000`,
       );
-      if (!response.status === "ok") {
+      if (!response.ok) {
         throw response;
       }
       const data = await response.json();
 
-      delete data.game_indices;
-      delete data.generation;
-      delete data.move_damage_class;
-      delete data.moves;
-      delete data.names;
-      delete data.past_damage_relations;
-
       return data;
     } catch (e) {
-      throw new Error(e);
+      throw new Error(e as string);
     }
   }
 
-  async function assembleTypeData() {
-    setTypeData([
-      await getTypeInfo(shapedUserChoice[0]),
-      await getTypeInfo(shapedUserChoice[1]),
-    ]);
-  }
-
   useEffect(() => {
-    if (
-      !typeData ||
-      typeData[0]?.name !== shapedUserChoice[0] ||
-      typeData[1]?.name !== shapedUserChoice[1]
-    ) {
-      assembleTypeData();
-    }
-  }, []);
+    setTypeData([specificTypesQueryType1.data, specificTypesQueryType2.data]);
+  }, [specificTypesQueryType1.data, specificTypesQueryType2.data]);
 
-  useEffect(() => {
-    if (typeData) {
-      localStorage.setItem("typeData", JSON.stringify(typeData));
-    }
-  }, [typeData]);
-
-  if (
-    !typeData[0]?.name ||
-    typeData[0].name !== shapedUserChoice[0] ||
-    typeData[1].name !== shapedUserChoice[1]
-  ) {
+  if (!typeData[0]?.name || !typeData[1]?.name) {
     return (
       <Grid container spacing={1}>
         <Grid
@@ -98,9 +77,7 @@ function TypeInfo() {
         }}
       >
         <Typography variant="h1" component="h1">
-          {shapedUserChoice[0]}
-          &nbsp;
-          {shapedUserChoice[1]}
+          {shapedUserChoice[0]} {shapedUserChoice[1]}
         </Typography>
         <IconButton
           style={{ height: "40px", width: "40px" }}

@@ -1,0 +1,26 @@
+react-error-boundary
+suspense
+
+${POKEMON_ENDPOINT}type/${type}?limit=100000 - probably parameterise that limit (maybe with an environment variable)
+deleting stuff from a source object is bad - you’re destroying data with no audit trail/way to revers. Create a new object and copy out the properties you want
+
+{" "} <-- for react you just do {" "}
+
+Try to pass things into functions rather than rely on scope and order
+
+If you define functions inside a component then it will recreate those functions every time - useCallback will help with that (the new compiler will actually remove this need)
+
+DRY - Don’t repeat yourself. If you see repeated code, like pokemonData.types[0] then de-structure that to a variable and then use or de-structure that variable further, so you’re not saying pokemonData repeatedly.
+
+In assembleTypeData , for example, I think you could just use a loop there, no? You’re just fetching for each, so for (const type of pokemonData.types)
+
+There’s lots of defensive checks and I think that’s generally a sign of muddled logic when you’re having to check 4 random conditions, whose meaning isn’t clear, before you do something. I find writing pseudo-code and then adding the real code helps here. Also, try labelling your data, so const isNonUserChoice = pokemonData.name !== userChoice
+
+
+readme
+
+images needed?
+
+define state types more strictly
+
+copy out api responses to give only required data
