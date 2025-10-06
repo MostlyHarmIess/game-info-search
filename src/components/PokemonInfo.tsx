@@ -114,7 +114,7 @@ function PokemonInfo() {
           style={{ minHeight: "127px" }}
         />
         <Typography variant="h1" component="h1">
-          {userChoice}, {typeData[0].name},{typeData[1] ? typeData[1].name : ""}
+          {userChoice} - {typeData[0].name}, {typeData[1] ? typeData[1].name : ""}
         </Typography>
         <IconButton
           style={{ height: "40px", width: "40px", marginLeft: "auto" }}
